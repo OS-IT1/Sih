@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sample Collection Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body {
+      background: linear-gradient(to right, #eef2f3, #d9e4ec);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+    .tab-container {
+      display: flex;
+      justify-content: center;
+      background: #34495e;
+      padding: 0.5rem;
+    }
+    .tab {
+      padding: 0.7rem 1.5rem;
+      margin: 0 0.3rem;
+      background: #2c3e50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .tab:hover { background: #1abc9c; transform: translateY(-2px); }
+    .tab.active { background: #1abc9c; font-weight: bold; }
+    .tab-content { display: none; padding: 2rem; animation: fadeIn 0.5s ease-in-out; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    form {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 { margin-bottom: 1rem; color: #2c3e50; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+    input {
+      width: 100%;
+      padding: 0.7rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.3s;
+    }
+    input:focus { border-color: #1abc9c; box-shadow: 0 0 6px rgba(26, 188, 156, 0.4); }
+    button {
+      background: #1abc9c;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.3s;
+      margin-right: 10px;
+    }
+    button:hover { background: #16a085; }
+    .record-list {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .record-item {
+      border-bottom: 1px solid #ddd;
+      padding: 0.8rem 0;
+    }
+    .record-item:last-child { border-bottom: none; }
+    .report-box {
+      background: #fff;
+      padding: 2rem;
+      margin: auto;
+      max-width: 700px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <header>Sample Collection Dashboard</header>
+
+  <!-- Tabs -->
+  <div class="tab-container">
+    <div class="tab active" onclick="openTab('login')">Login</div>
+    <div class="tab" onclick="openTab('collection')">Collection</div>
+    <div class="tab" onclick="openTab('records')">Records</div>
+    <div class="tab" onclick="openTab('labreport')">Lab Report</div>
+  </div>
+
+  <!-- Login Tab -->
+  <div id="login" class="tab-content active">
+    <form id="loginForm">
+      <h2>Collector Login</h2>
+      <label for="collectorId">Collector ID</label>
+      <input type="text" id="collectorId" placeholder="Enter your ID" required>
+      <label for="collectorName">Collector Name</label>
+      <input type="text" id="collectorName" placeholder="Enter your name" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Collection Tab -->
+  <div id="collection" class="tab-content">
+    <form id="sampleForm">
+      <h2>New Herb Collection</h2>
+
+      <label for="location">Location (Coordinates)</label>
+      <input type="text" id="location" placeholder="Click 'Get Location'">
+
+      <label for="timestamp">Timestamp</label>
+      <input type="text" id="timestamp" placeholder="Click 'Get Location'" readonly>
+
+      <label for="herb">Herb Name</label>
+      <input type="text" id="herb" placeholder="Enter herb name" required>
+
+      <button type="button" onclick="getLocation()">Get Location & Time</button>
+      <button type="submit">Save Herb</button>
+    </form>
+  </div>
+
+  <!-- Records Tab -->
+  <div id="records" class="tab-content">
+    <h2>Sample Records</h2>
+    <div class="record-list" id="recordList">
+      <p>No records available yet.</p>
+    </div>
+  </div>
+
+  <!-- Lab Report Tab -->
+  <div id="labreport" class="tab-content">
+    <div class="report-box">
+      <h2>Lab Report</h2>
+      <p><strong>Sample ID:</strong> #001</p>
+      <p><strong>Collected By:</strong> Collector ID 123 (John Doe)</p>
+      <p><strong>Herb:</strong> Tulsi</p>
+      <p><strong>Location:</strong> (28.61, 77.23)</p>
+      <p><strong>Temperature:</strong> 28°C</p>
+      <p><strong>Moisture:</strong> 60%</p>
+      <p><strong>pH Level:</strong> 6.8</p>
+      <p><strong>Status:</strong> Healthy sample</p>
+    </div>
+  </div>
+
+  <script>
+    let loggedInCollector = null;
+    let records = [];
+
+    function openTab(tabId) {
+      let tabs = document.querySelectorAll('.tab');
+      let contents = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      contents.forEach(content => content.classList.remove('active'));
+      document.querySelector(`.tab[onclick="openTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Handle login
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const collectorId = document.getElementById("collectorId").value;
+      const collectorName = document.getElementById("collectorName").value;
+
+      loggedInCollector = { id: collectorId, name: collectorName };
+      localStorage.setItem("collector", JSON.stringify(loggedInCollector));
+      alert("Login successful!");
+      openTab("collection");
+    });
+
+    // Auto login if data exists
+    window.onload = () => {
+      const savedCollector = localStorage.getItem("collector");
+      if (savedCollector) {
+        loggedInCollector = JSON.parse(savedCollector);
+        openTab("collection");
+      }
+    };
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          document.getElementById("location").value = `${lat}, ${lon}`;
+          document.getElementById("timestamp").value = new Date().toLocaleString();
+        }, () => {
+          alert("Unable to retrieve location.");
+        });
+      } else {
+        alert("Geolocation not supported by this browser.");
+      }
+    }
+
+    // Save sample
+    document.getElementById("sampleForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!loggedInCollector) {
+        alert("Please login first!");
+        openTab("login");
+        return;
+      }
+      const herb = document.getElementById("herb").value;
+      const location = document.getElementById("location").value;
+      const timestamp = document.getElementById("timestamp").value;
+
+      const newRecord = {
+        collectorId: loggedInCollector.id,
+        collectorName: loggedInCollector.name,
+        herb, location, timestamp
+      };
+      records.push(newRecord);
+      updateRecords();
+      alert("Herb saved successfully!");
+      document.getElementById("sampleForm").reset();
+    });
+
+    function updateRecords() {
+      const list = document.getElementById("recordList");
+      list.innerHTML = "";
+      if (records.length === 0) {
+        list.innerHTML = "<p>No records available yet.</p>";
+        return;
+      }
+      records.forEach((rec, i) => {
+        const item = document.createElement("div");
+        item.classList.add("record-item");
+        item.innerHTML = `
+          <p><strong>ID:</strong> ${i+1}</p>
+          <p><strong>Collector:</strong> ${rec.collectorName} (ID: ${rec.collectorId})</p>
+          <p><strong>Herb:</strong> ${rec.herb}</p>
+          <p><strong>Location:</strong> ${rec.location}</p>
+          <p><strong>Timestamp:</strong> ${rec.timestamp}</p>
+        `;
+        list.appendChild(item);
+      });
+    }
+  </script>
+</body>
+</html>
